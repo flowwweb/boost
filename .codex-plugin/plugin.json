@@ -1,6 +1,6 @@
 {
   "name": "boost",
-  "version": "0.1.0+codex.20260912163540",
+  "version": "0.1.0+codex.20260913200712",
   "description": "A minimal local social dashboard for metrics, repeatable actions, schedules, usage, and Boost mode.",
   "author": {
     "name": "Local developer"
