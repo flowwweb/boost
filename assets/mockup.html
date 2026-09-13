@@ -1,0 +1,735 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Boost — social presence control</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #07080d;
+      --panel: #10131c;
+      --line: #252b3a;
+      --line-soft: #1b2030;
+      --text: #f7f7fb;
+      --muted: #9aa2b7;
+      --dim: #6f778d;
+      --violet: #8c4dff;
+      --violet-2: #bd8cff;
+      --coral: #ff6f79;
+      --mint: #4de3b1;
+      --amber: #ffbf55;
+      --blue: #5a9bff;
+      --pink: #f45baa;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+    :root[data-theme="light"] {
+      color-scheme: light;
+      --bg: #f2f4f8;
+      --panel: #ffffff;
+      --line: #d9deea;
+      --line-soft: #e7eaf1;
+      --text: #141722;
+      --muted: #5b6478;
+      --dim: #8690a4;
+    }
+    :root[data-theme="black"] {
+      --bg: #000000;
+      --panel: #08080c;
+      --line: #1b1d25;
+      --line-soft: #111219;
+      --text: #fafaff;
+      --muted: #949bad;
+      --dim: #656b7c;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-width: 320px;
+      background:
+        radial-gradient(900px 420px at 100% 0%, rgba(139, 62, 255, .14), transparent 68%),
+        radial-gradient(700px 440px at 0% 100%, rgba(241, 54, 137, .08), transparent 70%),
+        var(--bg);
+      color: var(--text);
+      font-size: 13px;
+      letter-spacing: .005em;
+    }
+    [data-theme="light"] body { background: linear-gradient(145deg, #f7f8fb, #eceff5); }
+    [data-theme="black"] body { background: #000; }
+    [data-theme="light"] .screen-nav,
+    [data-theme="light"] .screen-card,
+    [data-theme="light"] .account-tab,
+    [data-theme="light"] .account-head,
+    [data-theme="light"] .metric,
+    [data-theme="light"] .panel { background: rgba(255,255,255,.9); }
+    [data-theme="light"] .ghost-button,
+    [data-theme="light"] .cycle-editor-row input,
+    [data-theme="light"] .cycle-editor-row select,
+    [data-theme="light"] .setting-input,
+    [data-theme="light"] .setting-select { background: #fff; color: var(--text); }
+    [data-theme="light"] .calendar > div { background: #fff; }
+    [data-theme="light"] .time-head,
+    [data-theme="light"] .time-label { background: #f8f9fc !important; }
+    [data-theme="light"] .next-post { background: #f7f8fc; }
+    button { font: inherit; }
+    button:focus-visible { outline: 2px solid var(--violet-2); outline-offset: 2px; }
+    .app { width: min(1500px, calc(100% - 48px)); margin: 0 auto; padding: 30px 0 44px; }
+    .topbar { display: flex; align-items: center; justify-content: space-between; gap: 20px; margin-bottom: 24px; }
+    .brand { display: inline-flex; align-items: center; gap: 12px; min-width: 0; }
+    .brand-mark { width: 38px; height: 46px; flex: none; filter: drop-shadow(0 0 15px rgba(177, 66, 255, .36)); }
+    .brand-copy { min-width: 0; }
+    .wordmark { margin: 0; font-size: clamp(27px, 3vw, 36px); line-height: .95; font-weight: 850; letter-spacing: -.065em; }
+    .tagline { margin-top: 6px; color: var(--muted); font-size: 12px; letter-spacing: .02em; }
+    .top-status { display: inline-flex; align-items: center; gap: 9px; color: var(--muted); white-space: nowrap; }
+    .screen-nav { display: flex; gap: 5px; margin: 0 0 18px; padding: 4px; border: 1px solid var(--line); border-radius: 10px; background: rgba(12,15,23,.76); width: fit-content; }
+    .screen-nav button { border: 0; border-radius: 7px; padding: 8px 12px; background: transparent; color: var(--muted); cursor: pointer; font-size: 12px; }
+    .screen-nav button:hover { color: var(--text); }
+    .screen-nav button.active { color: var(--text); background: #222037; box-shadow: inset 0 0 0 1px rgba(140,77,255,.45); }
+    .screen-panel { display: none; }
+    .screen-panel.active { display: block; }
+    .settings-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(260px, .78fr); gap: 12px; }
+    .settings-list { display: grid; gap: 0; }
+    .setting-row { display: flex; align-items: center; justify-content: space-between; gap: 18px; min-height: 62px; padding: 10px 0; border-bottom: 1px solid var(--line-soft); }
+    .setting-row:last-child { border-bottom: 0; }
+    .setting-copy { min-width: 0; }
+    .setting-label { font-weight: 750; }
+    .setting-help { margin-top: 4px; color: var(--dim); font-size: 11px; line-height: 1.35; }
+    .setting-select, .setting-input { min-width: 190px; border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; color: var(--text); background: var(--panel); }
+    .setting-input { width: 210px; }
+    .setting-number { width: 104px; min-width: 104px; }
+    .setting-input:disabled, .setting-select:disabled { opacity: .48; cursor: not-allowed; }
+    .theme-switch { display: inline-flex; gap: 3px; padding: 3px; border: 1px solid var(--line); border-radius: 9px; background: rgba(12,15,23,.5); }
+    .theme-switch button { border: 0; border-radius: 6px; padding: 7px 10px; color: var(--muted); background: transparent; cursor: pointer; font-size: 11px; }
+    .theme-switch button.active { color: var(--text); background: var(--violet); box-shadow: 0 3px 10px rgba(140,77,255,.24); }
+    .settings-note { margin: 14px 0 0; padding: 11px 12px; border: 1px solid var(--line); border-radius: 9px; color: var(--muted); background: rgba(140,77,255,.07); font-size: 11px; line-height: 1.45; }
+    .screen-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 12px; }
+    .screen-toolbar h2 { margin: 0; font-size: 22px; letter-spacing: -.035em; }
+    .screen-toolbar p { margin: 4px 0 0; color: var(--muted); font-size: 12px; }
+    .toolbar-actions { display: flex; align-items: center; gap: 8px; }
+    .ghost-button { border: 1px solid var(--line); border-radius: 8px; padding: 8px 11px; color: var(--muted); background: #111521; cursor: pointer; }
+    .ghost-button:hover { color: var(--text); border-color: #4a5270; }
+    .screen-grid { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(260px, .9fr); gap: 12px; }
+    .screen-card { min-width: 0; border: 1px solid var(--line); border-radius: 12px; background: rgba(16,19,28,.88); overflow: hidden; }
+    .screen-card-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 15px 17px; border-bottom: 1px solid var(--line-soft); }
+    .screen-card-head h3 { margin: 0; font-size: 15px; }
+    .screen-card-body { padding: 14px 16px; }
+    .schedule-list { display: grid; gap: 0; }
+    .schedule-item { display: grid; grid-template-columns: 82px 10px minmax(0,1fr) auto; align-items: center; gap: 10px; min-height: 48px; border-bottom: 1px solid var(--line-soft); }
+    .schedule-item:last-child { border-bottom: 0; }
+    .schedule-time { color: var(--muted); font-size: 11px; }
+    .schedule-item i { width: 8px; height: 8px; border-radius: 50%; background: var(--violet-2); }
+    .schedule-title { font-weight: 750; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .schedule-meta { color: var(--dim); font-size: 11px; }
+    .state-pill { display: inline-flex; align-items: center; border-radius: 99px; padding: 4px 8px; color: var(--mint); background: rgba(77,227,177,.11); font-size: 10px; white-space: nowrap; }
+    .cycle-editor { display: grid; gap: 0; }
+    .cycle-editor-row { display: grid; grid-template-columns: 25px minmax(120px,.72fr) 132px minmax(160px,1.1fr) 84px 32px; align-items: center; gap: 10px; min-height: 50px; padding: 8px 0; border-bottom: 1px solid var(--line-soft); }
+    .cycle-editor-row:last-child { border-bottom: 0; }
+    .cycle-editor-row input { width: 100%; min-width: 0; border: 1px solid var(--line); border-radius: 6px; padding: 6px 8px; color: var(--text); background: #0b0e15; }
+    .cycle-editor-row input:focus { outline: 1px solid var(--violet); border-color: var(--violet); }
+    .cycle-editor-row select { width: 100%; min-width: 0; border: 1px solid var(--line); border-radius: 6px; padding: 6px 7px; color: var(--text); background: #0b0e15; }
+    .cycle-editor-row select:focus { outline: 1px solid var(--violet); border-color: var(--violet); }
+    .action-chip { display: inline-flex; align-items: center; margin-right: 6px; border-radius: 99px; padding: 2px 6px; color: var(--violet-2); background: rgba(140,77,255,.11); font-size: 9px; font-weight: 800; letter-spacing: .05em; text-transform: uppercase; vertical-align: 1px; }
+    .account-list { display: grid; gap: 8px; }
+    .account-row { display: grid; grid-template-columns: 38px minmax(0,1fr) auto auto; align-items: center; gap: 12px; padding: 12px; border: 1px solid var(--line); border-radius: 9px; background: #111520; }
+    .account-row h3 { margin: 0; font-size: 13px; }
+    .account-row p { margin: 3px 0 0; color: var(--muted); font-size: 11px; }
+    .account-row .account-icon { width: 36px; height: 36px; }
+    .connection-state { color: var(--muted); font-size: 11px; white-space: nowrap; }
+    .connection-state.connected { color: var(--mint); }
+    .connection-method-select { width: 190px; margin-top: 7px; border: 1px solid var(--line); border-radius: 7px; padding: 6px 8px; color: var(--text); background: #0b0e15; font-size: 11px; }
+    .connection-method-select:focus { outline: 1px solid var(--violet); border-color: var(--violet); }
+    .screen-footnote { margin: 14px 0 0; color: var(--dim); font-size: 11px; line-height: 1.5; }
+    .activity-table { width: 100%; border-collapse: collapse; }
+    .activity-table th { padding: 0 8px 10px; color: var(--dim); font-size: 10px; text-align: left; text-transform: uppercase; letter-spacing: .09em; font-weight: 700; }
+    .activity-table td { padding: 11px 8px; border-top: 1px solid var(--line-soft); color: var(--muted); font-size: 11px; vertical-align: middle; }
+    .activity-table td:first-child { color: var(--text); font-weight: 700; }
+    .activity-summary { display: grid; gap: 12px; }
+    .summary-stat { padding-bottom: 12px; border-bottom: 1px solid var(--line-soft); }
+    .summary-stat:last-child { padding-bottom: 0; border-bottom: 0; }
+    .summary-stat span { display: block; color: var(--muted); font-size: 11px; }
+    .summary-stat b { display: block; margin-top: 5px; font-size: 22px; letter-spacing: -.03em; }
+    .status-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--mint); box-shadow: 0 0 0 4px rgba(77,227,177,.09), 0 0 16px rgba(77,227,177,.35); }
+    .account-tabs { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 10px; margin-bottom: 14px; }
+    .account-tab {
+      min-height: 64px; display: flex; align-items: center; gap: 11px; padding: 11px 14px;
+      border: 1px solid var(--line); border-radius: 12px; color: var(--muted); background: rgba(16,19,28,.82);
+      cursor: pointer; text-align: left; transition: border-color .16s ease, background .16s ease, transform .16s ease;
+    }
+    .account-tab:hover { border-color: #454d65; transform: translateY(-1px); }
+    .account-tab.active { border-color: var(--violet); background: linear-gradient(110deg, rgba(120,62,255,.18), rgba(20,24,37,.9)); color: var(--text); box-shadow: 0 0 0 1px rgba(140,77,255,.12), 0 12px 30px rgba(0,0,0,.2); }
+    .account-tab.add { justify-content: center; border-style: dashed; color: var(--text); }
+    .account-icon { width: 34px; height: 34px; display: grid; place-items: center; flex: none; border-radius: 9px; background: #05060a; color: #fff; font-weight: 800; font-size: 17px; }
+    .account-icon svg { width: 18px; height: 18px; display: block; }
+    .account-icon.provider-x, .account-icon.platform-x { border: 1px solid #30333d; }
+    .account-icon.platform-linkedin { background: #1877d4; }
+    .account-icon.platform-instagram { background: linear-gradient(145deg, #f58529, #dd2a7b 55%, #8134af); }
+    .account-icon.platform-youtube { background: #f20d19; }
+    .account-icon.platform-threads { background: #161820; border: 1px solid #30333d; }
+    .account-meta { min-width: 0; display: grid; gap: 4px; }
+    .account-handle { color: inherit; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .account-state { display: flex; align-items: center; gap: 6px; color: var(--dim); font-size: 11px; }
+    .account-tab.active .account-state { color: var(--mint); }
+    .account-state i { width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+    .add-symbol { font-size: 24px; font-weight: 300; line-height: 1; }
+    .account-head { display: flex; align-items: center; justify-content: space-between; gap: 16px; border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; background: rgba(16,19,28,.86); }
+    .active-account { display: flex; align-items: center; gap: 11px; min-width: 0; }
+    .active-account .account-icon { width: 40px; height: 40px; }
+    .active-handle { font-size: 16px; font-weight: 800; }
+    .active-project { margin-top: 3px; color: var(--muted); font-size: 11px; }
+    .active-connection { margin-top: 3px; color: var(--dim); font-size: 10px; }
+    .active-sub { display: flex; align-items: center; gap: 8px; margin-top: 4px; color: var(--mint); font-size: 11px; text-transform: uppercase; letter-spacing: .08em; }
+    .active-sub.needs-auth { color: var(--coral); }
+    .boost-control { display: inline-flex; align-items: center; gap: 12px; }
+    .boost-label { color: var(--muted); font-size: 12px; }
+    .boost-label b { color: var(--coral); font-size: 13px; margin-left: 4px; }
+    .toggle { width: 48px; height: 27px; border: 1px solid #3a4051; border-radius: 99px; padding: 3px; background: #202532; cursor: pointer; display: flex; align-items: center; transition: background .16s ease, border-color .16s ease; }
+    .toggle span { width: 19px; height: 19px; border-radius: 50%; background: #aab2c3; transition: transform .16s ease, background .16s ease; }
+    .toggle.on { justify-content: flex-end; border-color: var(--violet); background: linear-gradient(90deg, #6e31e8, #9b66ff); }
+    .toggle.on span { background: #fff; }
+    .toggle:disabled { opacity: .45; cursor: not-allowed; }
+    .metrics { display: grid; grid-template-columns: repeat(6, 1fr); gap: 10px; margin: 12px 0; }
+    .metric { min-height: 104px; border: 1px solid var(--line); border-radius: 12px; padding: 15px 16px; background: rgba(16,19,28,.86); }
+    .metric-label { color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: .1em; }
+    .metric-value { margin-top: 8px; font-size: 28px; line-height: 1; font-weight: 850; letter-spacing: -.04em; }
+    .metric-note { margin-top: 8px; color: var(--dim); font-size: 11px; }
+    .metric-note.good { color: var(--mint); }
+    .metric-cost .metric-value { font-size: 25px; }
+    .metric-cost .metric-note { display: flex; justify-content: space-between; gap: 6px; }
+    .meter { height: 5px; margin-top: 10px; overflow: hidden; border-radius: 99px; background: #292e3d; }
+    .meter i { display: block; width: 43%; height: 100%; border-radius: inherit; background: linear-gradient(90deg, var(--violet), var(--violet-2)); }
+    .workspace { display: grid; grid-template-columns: minmax(0, .92fr) minmax(0, 1.08fr); gap: 12px; }
+    .panel { min-width: 0; border: 1px solid var(--line); border-radius: 12px; background: rgba(16,19,28,.88); overflow: hidden; }
+    .panel-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 17px 18px 14px; border-bottom: 1px solid var(--line-soft); }
+    .panel-title { display: flex; align-items: baseline; gap: 10px; min-width: 0; }
+    .panel-title h2 { margin: 0; font-size: 18px; letter-spacing: -.025em; }
+    .panel-title span { color: var(--muted); font-size: 12px; white-space: nowrap; }
+    .panel-action { border: 0; background: transparent; color: var(--violet-2); cursor: pointer; font-size: 12px; font-weight: 700; }
+    .panel-action:hover { color: #fff; }
+    .formula-list { padding: 4px 10px 11px; }
+    .formula-row { display: grid; grid-template-columns: 25px minmax(0, 1fr) 70px 38px; align-items: center; gap: 10px; min-height: 42px; padding: 7px 8px; border-bottom: 1px solid var(--line-soft); }
+    .formula-row:last-child { border-bottom: 0; }
+    .formula-index { width: 22px; height: 22px; display: grid; place-items: center; border-radius: 7px; color: #07080d; font-size: 10px; font-weight: 900; }
+    .formula-main { min-width: 0; }
+    .formula-name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: 750; }
+    .formula-description { margin-top: 2px; color: var(--dim); font-size: 10px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .formula-time { color: var(--muted); font-size: 11px; text-align: right; white-space: nowrap; }
+    .mini-toggle { width: 32px; height: 18px; border: 0; border-radius: 99px; padding: 2px; display: flex; align-items: center; background: #2a3040; cursor: pointer; }
+    .mini-toggle span { width: 14px; height: 14px; border-radius: 50%; background: #9199ac; }
+    .mini-toggle.on { justify-content: flex-end; background: #5b2bd2; }
+    .mini-toggle.on span { background: #fff; }
+    .calendar-wrap { overflow-x: auto; padding: 12px 14px 16px; }
+    .legend { display: flex; flex-wrap: wrap; gap: 7px 12px; margin: 0 0 12px 66px; }
+    .legend-item { display: inline-flex; align-items: center; gap: 5px; color: var(--muted); font-size: 10px; white-space: nowrap; }
+    .legend-item i { width: 7px; height: 7px; border-radius: 50%; }
+    .calendar { min-width: 670px; display: grid; grid-template-columns: 56px repeat(7, minmax(72px, 1fr)); gap: 1px; border: 1px solid var(--line-soft); background: var(--line-soft); }
+    .calendar > div { min-width: 0; background: #0d111a; }
+    .day-head { min-height: 45px; padding: 9px 5px 6px; color: var(--muted); text-align: center; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .07em; }
+    .day-head small { display: block; margin-top: 3px; color: var(--dim); font-size: 9px; font-weight: 500; text-transform: none; letter-spacing: 0; }
+    .day-head.today { color: var(--violet-2); background: rgba(140,77,255,.12); }
+    .time-head { background: #0b0e15 !important; }
+    .time-label { display: flex; align-items: center; justify-content: flex-end; padding-right: 7px; color: var(--dim); font-size: 9px; white-space: nowrap; }
+    .slot { padding: 3px; min-height: 30px; }
+    .slot-block { height: 100%; min-height: 23px; display: flex; align-items: center; padding: 0 6px; overflow: hidden; border-radius: 5px; color: #090a0f; font-size: 9px; font-weight: 800; white-space: nowrap; text-overflow: ellipsis; }
+    .slot-block.dim { opacity: .52; }
+    .next-post { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 12px; padding: 10px 11px; border: 1px solid var(--line); border-radius: 9px; background: #121726; }
+    .next-post-label { color: var(--muted); font-size: 10px; text-transform: uppercase; letter-spacing: .08em; }
+    .next-post-title { margin-top: 3px; font-weight: 700; }
+    .next-post-time { color: var(--violet-2); font-size: 11px; white-space: nowrap; }
+    .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
+    @media (max-width: 980px) {
+      .workspace { grid-template-columns: 1fr; }
+      .account-tabs { grid-template-columns: repeat(3, minmax(150px, 1fr)) minmax(130px, .8fr); }
+      .metrics { grid-template-columns: repeat(3, 1fr); }
+      .settings-grid { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 700px) {
+      .app { width: min(100% - 28px, 560px); padding-top: 20px; }
+      .topbar { align-items: flex-start; }
+      .top-status { display: none; }
+      .account-tabs { display: flex; overflow-x: auto; padding-bottom: 2px; }
+      .account-tab { min-width: 160px; }
+      .account-tab.add { min-width: 130px; }
+      .metrics { grid-template-columns: repeat(2, 1fr); }
+      .account-head { align-items: flex-start; flex-direction: column; }
+      .boost-control { width: 100%; justify-content: space-between; }
+      .setting-row { align-items: flex-start; flex-direction: column; gap: 9px; }
+      .setting-select { width: 100%; }
+    }
+    @media (max-width: 420px) {
+      .app { width: min(100% - 20px, 400px); }
+      .metrics { gap: 7px; }
+      .metric { padding: 12px; }
+      .metric-value { font-size: 24px; }
+      .formula-row { grid-template-columns: 25px minmax(0, 1fr) 58px 32px; gap: 7px; padding-inline: 4px; }
+      .cycle-editor-row { grid-template-columns: 25px minmax(0,1fr) 112px 58px 32px; gap: 7px; }
+      .cycle-editor-row [data-cycle-description] { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header class="topbar">
+      <div class="brand" aria-label="Boost home">
+        <svg class="brand-mark" viewBox="0 0 42 52" role="img" aria-labelledby="boostLogoTitle">
+          <title id="boostLogoTitle">Boost</title>
+          <defs><linearGradient id="bolt" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ff8a77"/><stop offset=".48" stop-color="#ff4ca9"/><stop offset="1" stop-color="#8c4dff"/></linearGradient></defs>
+          <path fill="url(#bolt)" d="M23.2 1 4 27.8h12.1L11.8 51 38 20.4H25.5L30 1Z"/>
+        </svg>
+        <div class="brand-copy"><h1 class="wordmark">Boost</h1><div class="tagline">Post. Engage. Grow.</div></div>
+      </div>
+      <div class="top-status"><i class="status-dot"></i><span>Local control surface</span></div>
+    </header>
+
+    <nav class="screen-nav" id="screenNav" aria-label="Boost screens">
+      <button type="button" class="active" data-screen="dashboard">Overview</button>
+      <button type="button" data-screen="schedule">Schedule</button>
+      <button type="button" data-screen="cycles">Cycles</button>
+      <button type="button" data-screen="accounts">Accounts</button>
+      <button type="button" data-screen="activity">Activity</button>
+      <button type="button" data-screen="settings">Settings</button>
+    </nav>
+
+    <nav class="account-tabs" id="accountTabs" aria-label="Accounts"></nav>
+
+    <section class="account-head dashboard-part">
+      <div class="active-account"><div class="account-icon provider-x" id="activeIcon" role="img" aria-label="X"></div><div><div class="active-handle" id="activeHandle"></div><div class="active-project" id="activeProject"></div><div class="active-connection" id="activeConnection"></div><div class="active-sub"><i class="status-dot"></i><span id="activeState"></span></div></div></div>
+      <div class="boost-control"><div class="boost-label">Boost mode <b id="boostLabel">OFF</b></div><button class="toggle" id="boostToggle" type="button" aria-pressed="false" title="Boost mode is the single opt-in switch for Boost network participation"><span></span><span class="sr-only">Toggle Boost mode and Boost network participation</span></button></div>
+    </section>
+
+    <section class="metrics dashboard-part" aria-label="Account metrics">
+      <div class="metric"><div class="metric-label">Followers</div><div class="metric-value" id="followersValue"></div><div class="metric-note good" id="followersNote"></div></div>
+      <div class="metric"><div class="metric-label">Engagement</div><div class="metric-value" id="engagementValue"></div><div class="metric-note good" id="engagementNote"></div></div>
+      <div class="metric"><div class="metric-label">Posts today</div><div class="metric-value" id="postsValue"></div><div class="metric-note" id="postsNote"></div></div>
+      <div class="metric"><div class="metric-label">Replies today</div><div class="metric-value" id="repliesValue"></div><div class="metric-note" id="repliesNote"></div></div>
+      <div class="metric"><div class="metric-label">Scheduled</div><div class="metric-value" id="scheduledValue"></div><div class="metric-note" id="scheduledNote"></div></div>
+      <div class="metric metric-cost"><div class="metric-label">Token cost</div><div class="metric-value" id="costValue"></div><div class="meter"><i id="tokenMeter"></i></div><div class="metric-note"><span id="tokenValue"></span><span id="tokenPercent"></span></div></div>
+    </section>
+
+    <main class="workspace dashboard-part">
+      <section class="panel" aria-labelledby="formulasTitle">
+        <div class="panel-head"><div class="panel-title"><h2 id="formulasTitle">Daily formulas</h2><span id="formulaCount">10 active</span></div><button class="panel-action" id="editCycles" type="button">Edit cycles</button></div>
+        <div class="formula-list" id="formulaList"></div>
+      </section>
+
+      <section class="panel" aria-labelledby="scheduleTitle">
+        <div class="panel-head"><div class="panel-title"><h2 id="scheduleTitle">Weekly schedule</h2><span>Repeating actions</span></div><button class="panel-action" id="manageLoops" type="button">Manage loops</button></div>
+        <div class="calendar-wrap">
+          <div class="legend" id="legend"></div>
+          <div class="calendar" id="calendar" role="grid" aria-label="Weekly post schedule"></div>
+          <div class="next-post"><div><div class="next-post-label">Next post</div><div class="next-post-title" id="nextTitle"></div></div><div class="next-post-time" id="nextTime"></div></div>
+        </div>
+      </section>
+    </main>
+
+    <section class="screen-panel" data-screen-panel="schedule" aria-labelledby="scheduleScreenTitle">
+      <div class="screen-toolbar"><div><h2 id="scheduleScreenTitle">Schedule</h2><p>See every repeating action before it runs.</p></div><div class="toolbar-actions"><button class="ghost-button" type="button" id="schedulePrev">←</button><button class="ghost-button" type="button" id="scheduleNext">→</button><button class="ghost-button" type="button" id="saveSchedule">Save schedule</button></div></div>
+      <div class="screen-grid"><section class="screen-card"><div class="screen-card-head"><h3 id="scheduleAccountTitle"></h3><span class="state-pill">LOCAL SCHEDULE</span></div><div class="calendar-wrap"><div class="legend" id="scheduleLegend"></div><div class="calendar" id="scheduleCalendar" role="grid" aria-label="Full weekly schedule"></div></div></section><section class="screen-card"><div class="screen-card-head"><h3>Today's repeater queue</h3><button class="panel-action" type="button" id="addScheduledPost">+ Add loop</button></div><div class="screen-card-body"><div class="schedule-list" id="queueList"></div></div></section></div>
+    </section>
+
+    <section class="screen-panel" data-screen-panel="cycles" aria-labelledby="cyclesScreenTitle">
+      <div class="screen-toolbar"><div><h2 id="cyclesScreenTitle">Formula cycles</h2><p>Repeat posts, replies, and DMs on your cadence.</p></div><div class="toolbar-actions"><button class="ghost-button" type="button" id="addCycle">+ Add loop</button><button class="ghost-button" type="button" id="resetCycles">Reset defaults</button><button class="ghost-button" type="button" id="saveCycles">Save changes</button></div></div>
+      <section class="screen-card"><div class="screen-card-head"><h3>Repeating actions</h3><span class="state-pill">ONE ACTIVE ACCOUNT</span></div><div class="screen-card-body"><div class="cycle-editor" id="cycleEditor"></div></div></section>
+    </section>
+
+    <section class="screen-panel" data-screen-panel="accounts" aria-labelledby="accountsScreenTitle">
+      <div class="screen-toolbar"><div><h2 id="accountsScreenTitle">Accounts</h2><p>Choose the connection method for each project.</p></div><div class="toolbar-actions"><button class="ghost-button" type="button" id="refreshAccounts">Refresh status</button><button class="ghost-button" type="button" id="addAccountScreen">+ Add account</button></div></div>
+      <section class="screen-card"><div class="screen-card-head"><h3>Connected accounts</h3><span class="state-pill">CREDENTIALS STAY LOCAL</span></div><div class="screen-card-body"><div class="account-list" id="accountList"></div><p class="screen-footnote">Official API uses <code>xurl auth oauth2</code>. Browser automation uses a signed-in browser session. Boost never reads or stores provider secrets.</p></div></section>
+    </section>
+
+    <section class="screen-panel" data-screen-panel="activity" aria-labelledby="activityScreenTitle">
+      <div class="screen-toolbar"><div><h2 id="activityScreenTitle">Activity</h2><p>Local run history and verified provider receipts.</p></div><div class="toolbar-actions"><button class="ghost-button" type="button" id="exportReceipts">Export receipts</button><button class="ghost-button" type="button" id="pauseBoost">Pause Boost</button></div></div>
+      <div class="screen-grid"><section class="screen-card"><div class="screen-card-head"><h3>Recent activity</h3><span class="state-pill">LOCAL ONLY</span></div><div class="screen-card-body"><table class="activity-table"><thead><tr><th>Action</th><th>Account</th><th>Target</th><th>Status</th></tr></thead><tbody id="activityRows"></tbody></table></div></section><section class="screen-card"><div class="screen-card-head"><h3>Usage</h3></div><div class="screen-card-body activity-summary"><div class="summary-stat"><span>Tokens this period</span><b id="activityTokens">428,000</b></div><div class="summary-stat"><span>Estimated cost</span><b id="activityCost">$2.14</b></div><div class="summary-stat"><span>Current mode</span><b id="activityMode">ACTIVE</b></div></div></section></div>
+    </section>
+
+    <section class="screen-panel" data-screen-panel="settings" aria-labelledby="settingsScreenTitle">
+      <div class="screen-toolbar"><div><h2 id="settingsScreenTitle">Settings</h2><p>Keep the control surface tuned to how you work.</p></div><div class="toolbar-actions"><button class="ghost-button" type="button" id="saveSettings">Save settings</button></div></div>
+      <div class="settings-grid">
+        <section class="screen-card"><div class="screen-card-head"><h3>Preferences</h3><span class="state-pill">LOCAL ONLY</span></div><div class="screen-card-body settings-list">
+          <div class="setting-row"><div class="setting-copy"><div class="setting-label">Project name</div><div class="setting-help">A short label for the selected account workspace.</div></div><input class="setting-input" id="projectNameSetting" type="text" maxlength="80" placeholder="Untitled project" aria-label="Project name"></div>
+          <div class="setting-row"><div class="setting-copy"><div class="setting-label">Connection method</div><div class="setting-help">Choose the official API or a signed-in browser session for this project.</div></div><select class="setting-select" id="connectionMethodSetting" aria-label="Connection method"></select></div>
+          <div class="setting-row"><div class="setting-copy"><div class="setting-label">Theme</div><div class="setting-help">Choose the contrast that fits your workspace.</div></div><div class="theme-switch" id="themeSwitch" role="group" aria-label="Theme"><button type="button" data-theme-choice="light">Light</button><button type="button" data-theme-choice="midnight">Midnight</button><button type="button" data-theme-choice="black">Black</button></div></div>
+          <div class="setting-row"><div class="setting-copy"><div class="setting-label">Timezone</div><div class="setting-help">Times in the calendar and post loops use this zone.</div></div><select class="setting-select" id="timezoneSetting" aria-label="Timezone"><option value="Asia/Bangkok">Asia/Bangkok · UTC+7</option><option value="Europe/Helsinki">Europe/Helsinki · UTC+2</option><option value="UTC">UTC</option><option value="America/Los_Angeles">America/Los_Angeles · UTC−7</option></select></div>
+        </div></section>
+        <section class="screen-card"><div class="screen-card-head"><h3>Schedule</h3><span class="state-pill">PER PROJECT</span></div><div class="screen-card-body settings-list">
+          <div class="setting-row"><div class="setting-copy"><div class="setting-label">Schedule loops</div><div class="setting-help">Include this project in the weekly calendar.</div></div><button class="toggle" id="scheduleEnabledToggle" type="button" aria-pressed="true"><span></span><span class="sr-only">Toggle schedule loops</span></button></div>
+          <div class="setting-row"><div class="setting-copy"><div class="setting-label">Posts per day</div><div class="setting-help">Target for original posts in this project.</div></div><input class="setting-input setting-number" id="postsTargetSetting" type="number" min="0" max="100" step="1" aria-label="Posts per day"></div>
+          <div class="setting-row"><div class="setting-copy"><div class="setting-label">Replies per day</div><div class="setting-help">Target for relevant replies in this project.</div></div><input class="setting-input setting-number" id="repliesTargetSetting" type="number" min="0" max="500" step="1" aria-label="Replies per day"></div>
+        </div></section>
+        <section class="screen-card"><div class="screen-card-head"><h3>Usage</h3><span class="state-pill">PER PROJECT</span></div><div class="screen-card-body settings-list">
+          <div class="setting-row"><div class="setting-copy"><div class="setting-label">Monthly token limit</div><div class="setting-help">Stops draft generation before the budget is exceeded.</div></div><input class="setting-input setting-number" id="tokenLimitSetting" type="number" min="0" max="100000000" step="1000" aria-label="Monthly token limit"></div>
+          <div class="setting-row"><div class="setting-copy"><div class="setting-label">Spend alert</div><div class="setting-help">Show a notice when usage reaches this share.</div></div><select class="setting-select" id="spendAlertSetting" aria-label="Spend alert"><option value="50">50%</option><option value="80">80%</option><option value="100">100%</option></select></div>
+          <div class="setting-row"><div class="setting-copy"><div class="setting-label">Usage alerts</div><div class="setting-help">Notify when a project approaches its limit.</div></div><button class="toggle" id="usageAlertsToggle" type="button" aria-pressed="true"><span></span><span class="sr-only">Toggle usage alerts</span></button></div>
+        </div></section>
+        <section class="screen-card"><div class="screen-card-head"><h3>Codex tasks & safety</h3><span class="state-pill">GUARDED</span></div><div class="screen-card-body settings-list">
+          <div class="setting-row"><div class="setting-copy"><div class="setting-label">Codex task sync</div><div class="setting-help">Keep Boost drafts and run notes linked to this project’s Codex task.</div></div><button class="toggle" id="codexTaskToggle" type="button" aria-pressed="true"><span></span><span class="sr-only">Toggle Codex task sync</span></button></div>
+          <div class="setting-row"><div class="setting-copy"><div class="setting-label">Approval mode</div><div class="setting-help">Keep every new post in review until you approve it.</div></div><span class="state-pill">DRAFT ONLY</span></div>
+          <div class="setting-row"><div class="setting-copy"><div class="setting-label">Run notifications</div><div class="setting-help">Show a local notice when a scheduled run needs attention.</div></div><button class="toggle" id="notificationsToggle" type="button" aria-pressed="true"><span></span><span class="sr-only">Toggle run notifications</span></button></div>
+          <div class="setting-row"><div class="setting-copy"><div class="setting-label">Pause when X auth expires</div><div class="setting-help">Stops Boost before an unverified provider action.</div></div><button class="toggle" id="authPauseToggle" type="button" aria-pressed="true"><span></span><span class="sr-only">Toggle pause when X auth expires</span></button></div>
+          <div class="settings-note" id="boostTactics">Boost mode is the single opt-in switch for this account's Boost network participation and platform-aware tactics.</div>
+          <div class="settings-note">Boost stores preferences and schedules locally. Provider credentials stay with xurl and are never read by this dashboard.</div>
+        </div></section>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    const cycleActionOptions = [
+      {value:'post', label:'Post'},
+      {value:'reply-others', label:'Reply to others'},
+      {value:'reply-own', label:'Reply to my posts'},
+      {value:'dm', label:'DM'}
+    ];
+    function cycleAction(cycle) { const value = String(cycle && cycle.action || 'post'); return cycleActionOptions.some(function(option) { return option.value === value; }) ? value : 'post'; }
+    function actionLabel(value) { const option = cycleActionOptions.find(function(candidate) { return candidate.value === value; }); return option ? option.label : 'Post'; }
+    function actionOptionsMarkup(selected) { return cycleActionOptions.map(function(option) { return '<option value="' + option.value + '"' + (option.value === selected ? ' selected' : '') + '>' + option.label + '</option>'; }).join(''); }
+    const cycles = [
+      {id:'road-to-1m', name:'Road to 1M', short:'Road to 1M', description:'Share the journey. Real progress, real numbers.', action:'post', time:'9:00 AM', color:'#ff6878', days:['mon','tue','wed','thu','fri','sat','sun']},
+      {id:'connect', name:'Builder check-in', short:'Builder', description:'Ask builders what they are building or need.', action:'post', time:'10:00 AM', color:'#8b58ff', days:['mon','tue','wed','thu','fri','sat','sun']},
+      {id:'showcase', name:'Showcase', short:'Showcase', description:'Share what you are building or learning.', action:'post', time:'11:00 AM', color:'#50dca7', days:['mon','tue','wed','thu','fri','sat','sun']},
+      {id:'value-drop', name:'Value drop', short:'Value drop', description:'Teach one useful tip in 60 seconds.', action:'post', time:'12:00 PM', color:'#f45baa', days:['mon','tue','wed','thu','fri']},
+      {id:'behind-the-scenes', name:'Behind the scenes', short:'Behind scenes', description:'Show your process. Make it real.', action:'post', time:'1:00 PM', color:'#a66aff', days:['mon','wed','fri']},
+      {id:'hot-take', name:'Hot take', short:'Hot take', description:'Share a contrarian point of view.', action:'post', time:'2:00 PM', color:'#5a9bff', days:['tue','thu','sat']},
+      {id:'community-love', name:'Community love', short:'Community', description:'Reply, feature, or shout out someone.', action:'reply-others', time:'3:00 PM', color:'#ffbf55', days:['mon','tue','wed','thu','fri']},
+      {id:'tools-resources', name:'Keyword signal', short:'Keywords', description:'Share a useful keyword, tool, or GitHub project.', action:'post', time:'4:00 PM', color:'#f45baa', days:['mon','tue','wed','thu','fri','sat','sun']},
+      {id:'weekly-recap', name:'Weekly recap', short:'Weekly recap', description:'Summarize wins and next steps.', action:'post', time:'5:00 PM', color:'#8b58ff', days:['sun']},
+      {id:'open-loop', name:'Open loop', short:'Open loop', description:'End with a question or teaser.', action:'post', time:'6:00 PM', color:'#4de3b1', days:['mon','wed','fri']}
+    ].map(function(c) { c.enabled = true; return c; });
+
+    const seed = {
+      accounts: [], active:0, cycles: cycles.map(function(c) { return Object.assign({}, c); }),
+      settings: {theme:'midnight', timezone:'UTC', notifications:true, pauseOnAuth:true}
+    };
+    let storedState = null;
+    try { storedState = JSON.parse(localStorage.getItem('boost-minimal-v2') || 'null'); } catch (error) { storedState = null; }
+    let state = storedState && typeof storedState === 'object' ? storedState : seed;
+    if (!Array.isArray(state.accounts)) state.accounts = [];
+    state.accounts = state.accounts.filter(function(a) { return a && typeof a === 'object' && typeof a.handle === 'string' && a.handle.trim(); });
+    if (!Array.isArray(state.cycles) || !state.cycles.length) state.cycles = cycles.map(function(c) { return Object.assign({}, c); });
+    state.cycles = state.cycles.filter(function(c) { return c && typeof c === 'object'; });
+    if (!state.cycles.length) state.cycles = cycles.map(function(c) { return Object.assign({}, c); });
+    state.cycles.forEach(function(c, i) {
+      const base = cycles[i] || cycles[0];
+      if (typeof c.name !== 'string' || !c.name.trim()) c.name = base.name;
+      if (typeof c.description !== 'string') c.description = base.description;
+      c.action = cycleAction({action:c.action || base.action || 'post'});
+      if (typeof c.time !== 'string' || !c.time.trim()) c.time = base.time;
+      if (typeof c.color !== 'string' || !c.color.trim()) c.color = base.color;
+    });
+    const connectionMethods = [
+      {value:'official-api', label:'Official API', description:'xurl OAuth app'},
+      {value:'browser', label:'Browser automation', description:'signed-in browser session'}
+    ];
+    function connectionMethod(a) { const value = String(a && a.connectionMethod || 'official-api'); return connectionMethods.some(function(method) { return method.value === value; }) ? value : 'official-api'; }
+    function connectionMethodLabel(value) { const method = connectionMethods.find(function(candidate) { return candidate.value === value; }); return method ? method.label : 'Official API'; }
+    function connectionMethodOptionsMarkup(selected) { return connectionMethods.map(function(method) { return '<option value="' + method.value + '"' + (method.value === selected ? ' selected' : '') + '>' + method.label + ' · ' + method.description + '</option>'; }).join(''); }
+    const supportedPlatforms = ['x','linkedin','instagram','youtube','threads'];
+    state.accounts.forEach(function(a, i) {
+      const platform = String(a.platform || a.provider || 'x').toLowerCase();
+      a.id = a.id || 'account-' + i; a.platform = supportedPlatforms.indexOf(platform) === -1 ? 'x' : platform; a.icon = a.platform; a.iconClass = ''; a.provider = a.platform; a.connectionMethod = connectionMethod(a); a.runnerReady = false;
+      a.projectName = typeof a.projectName === 'string' ? a.projectName : 'Untitled project';
+      a.postsTarget = Number.isFinite(Number(a.postsTarget)) ? Math.max(0, Math.min(100, Number(a.postsTarget))) : 10;
+      a.repliesTarget = Number.isFinite(Number(a.repliesTarget)) ? Math.max(0, Math.min(500, Number(a.repliesTarget))) : 100;
+      a.tokenLimit = Number.isFinite(Number(a.tokenLimit)) ? Math.max(0, Math.min(100000000, Number(a.tokenLimit))) : 1000000;
+      a.spendAlert = [50, 80, 100].indexOf(Number(a.spendAlert)) === -1 ? 80 : Number(a.spendAlert);
+      a.scheduleEnabled = a.scheduleEnabled !== false; a.usageAlerts = a.usageAlerts !== false; a.codexTaskSync = a.codexTaskSync !== false;
+      a.followers = Number.isFinite(Number(a.followers)) ? Math.max(0, Number(a.followers)) : 0;
+      a.engagementRate = Number.isFinite(Number(a.engagementRate)) ? Math.max(0, Number(a.engagementRate)) : 0;
+    });
+    state.cycles.forEach(function(c) { const base = cycles.find(function(candidate) { return candidate.name === c.name || candidate.id === c.id; }); c.id = c.id || (base ? base.id : slug(c.name)); if (!Array.isArray(c.days)) c.days = base ? base.days.slice() : ['mon','tue','wed','thu','fri','sat','sun']; });
+    if (state && state.accounts && state.accounts.some(function(a) { return a.providerVerified !== true; })) {
+      state.accounts.forEach(function(a) { if (a.providerVerified !== true) { a.connected = false; a.online = false; a.runnerReady = false; a.boost = false; } });
+    }
+    const defaultCycleIds = state.cycles.map(cycleId);
+    if (state.cycleAssignmentVersion !== 1) {
+      state.accounts.forEach(function(a) { a.cycleIds = defaultCycleIds.slice(); });
+      state.cycleAssignmentVersion = 1;
+    }
+    state.accounts.forEach(function(a) { if (!Array.isArray(a.cycleIds)) a.cycleIds = defaultCycleIds.slice(); });
+    state.settings = Object.assign({theme:'midnight', timezone:'UTC', notifications:true, pauseOnAuth:true}, state.settings || {});
+    let activeScreen = 'dashboard';
+    let scheduleWeekOffset = 0;
+    const $ = function(id) { return document.getElementById(id); };
+    const emptyAccount = {id:'none', handle:'No account selected', online:false, boost:false, posts:0, replies:0, scheduled:0, tokens:0, tokenLimit:1000000, cost:0, connected:false, providerVerified:false, connectionMethod:'official-api', cycleIds:[]};
+    const account = function() { return state.accounts[state.active] || emptyAccount; };
+    const assignedCycleIds = function() { const a = account(); return a === emptyAccount || a.scheduleEnabled === false ? [] : (a.cycleIds || []); };
+    const save = function() { localStorage.setItem('boost-minimal-v2', JSON.stringify(state)); };
+    function esc(value) { return String(value == null ? '' : value).replace(/[&<>"']/g, function(ch) { return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]; }); }
+
+    function xIconSvg() { return '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 3h4.8l4.2 5.7L17.8 3H21l-6.4 7.6L21.5 21h-4.8l-4.8-6.4L6.2 21H3l6.6-7.9L4 3Z" fill="currentColor"/></svg>'; }
+    function platformKey(a) { const value = String(a && (a.platform || a.provider) || 'x').toLowerCase(); return supportedPlatforms.indexOf(value) === -1 ? 'x' : value; }
+    function platformLabel(platform) { return ({x:'X', linkedin:'LinkedIn', instagram:'Instagram', youtube:'YouTube', threads:'Threads'})[platform] || 'X'; }
+    const platformTactics = {x:'X: copy the post link, open it directly, then verify each action.', linkedin:'LinkedIn: open the native post URL, react once, then verify the state.', instagram:'Instagram: open the permalink, use one native reaction, then verify.', youtube:'YouTube: open the video URL, use one native reaction, then verify.', threads:'Threads: open the thread permalink, use one native reaction, then verify.'};
+    function platformSvg(platform) {
+      if (platform === 'x') return xIconSvg();
+      if (platform === 'linkedin') return '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5.3 8.4A2 2 0 1 0 5.3 4.5a2 2 0 0 0 0 3.9ZM3.6 9.9h3.4v10.5H3.6V9.9Zm5.5 0h3.2v1.4h.1c.4-.8 1.5-1.8 3.2-1.8 3.4 0 4 2.2 4 5v5.9h-3.4V15c0-1.3 0-3-1.9-3s-2.2 1.4-2.2 2.9v5.5H9.1V9.9Z" fill="currentColor"/></svg>';
+      if (platform === 'instagram') return '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="4" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="3.6" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="17.3" cy="6.8" r="1.1" fill="currentColor"/></svg>';
+      if (platform === 'youtube') return '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.4 7.5a2.8 2.8 0 0 0-2-2C16.6 5 12 5 12 5s-4.6 0-6.4.5a2.8 2.8 0 0 0-2 2A29 29 0 0 0 3.1 12a29 29 0 0 0 .5 4.5 2.8 2.8 0 0 0 2 2c1.8.5 6.4.5 6.4.5s4.6 0 6.4-.5a2.8 2.8 0 0 0 2-2 29 29 0 0 0 .5-4.5 29 29 0 0 0-.5-4.5ZM10 15.5v-7l6 3.5-6 3.5Z" fill="currentColor"/></svg>';
+      return '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4.1c4.5 0 7.9 2.8 7.9 7.2 0 4.6-3.8 8.2-8.1 8.2-2.1 0-3.8-.8-5-2.2l1.6-1.4c.9 1 2.1 1.5 3.5 1.5 2.9 0 5.6-2.3 5.6-5.6 0-2.9-2.2-4.9-5.4-4.9-2.2 0-3.7 1.1-3.7 2.7 0 1.1.9 1.9 2.1 1.9 1 0 1.8-.5 2.4-1.4l1.8 1.1c-.9 1.6-2.4 2.6-4.4 2.6-2.6 0-4.5-1.7-4.5-4 0-3.2 2.7-5.7 6.2-5.7Z" fill="currentColor"/></svg>';
+    }
+    function iconMarkup(a) { const platform = platformKey(a); return '<div class="account-icon platform-' + platform + ' provider-' + platform + '" role="img" aria-label="' + platformLabel(platform) + '">' + platformSvg(platform) + '</div>'; }
+    function setPlatformIcon(element, a) { const platform = platformKey(a); element.className = 'account-icon platform-' + platform + ' provider-' + platform; element.innerHTML = platformSvg(platform); element.setAttribute('aria-label', platformLabel(platform)); }
+
+    function renderTabs() {
+      $('accountTabs').innerHTML = state.accounts.map(function(a, i) {
+        return '<button class="account-tab ' + (i === state.active ? 'active' : '') + '" data-account="' + i + '" aria-pressed="' + (i === state.active) + '">' +
+          iconMarkup(a) + '<span class="account-meta"><span class="account-handle">' + esc(a.handle) + '</span><span class="account-state"><i></i>' + (a.platform === 'x' ? (a.online ? 'Online' : 'Offline') : 'Planned') + '</span></span></button>';
+      }).join('') + '<button class="account-tab add" id="addAccount" type="button"><span class="add-symbol">+</span><span>Add account</span></button>';
+      document.querySelectorAll('[data-account]').forEach(function(button) { button.onclick = function() { state.active = Number(button.dataset.account); render(); }; });
+      $('addAccount').onclick = function() {
+        const platform = String(prompt('Platform: x, linkedin, instagram, youtube, or threads') || 'x').trim().toLowerCase();
+        if (supportedPlatforms.indexOf(platform) === -1) { alert('Choose x, linkedin, instagram, youtube, or threads.'); return; }
+        const handle = prompt(platform === 'x' ? 'X handle' : platformLabel(platform) + ' handle or profile name');
+        if (!handle) return;
+        const normalized = handle.trim();
+        if (platform === 'x' && !/^[A-Za-z0-9_]{1,15}$/.test(normalized.replace(/^@/, ''))) { alert('Use a valid X handle with up to 15 letters, numbers, or underscores.'); return; }
+        if (platform !== 'x' && !/^\S{1,80}$/.test(normalized)) { alert('Use a short profile handle or name.'); return; }
+        state.accounts.push({id:'account-' + Date.now(), handle:platform === 'x' ? '@' + normalized.replace(/^@/, '') : normalized, platform:platform, icon:platform, online:false, boost:false, followers:0, engagementRate:0, posts:0, replies:0, scheduled:0, tokens:0, tokenLimit:1000000, cost:0, postsTarget:10, repliesTarget:100, spendAlert:80, scheduleEnabled:true, usageAlerts:true, codexTaskSync:true, projectName:'Untitled project', connected:false, providerVerified:false, runnerReady:false, provider:platform, connectionMethod:'official-api', cycleIds:state.cycles.map(cycleId)});
+        state.active = state.accounts.length - 1;
+        render();
+      };
+    }
+
+    function renderMetrics(a) {
+      setPlatformIcon($('activeIcon'), a);
+      $('activeHandle').textContent = a.handle; $('activeProject').textContent = a === emptyAccount ? 'Add an account to create a project' : (a.projectName || 'Untitled project'); $('activeConnection').textContent = a === emptyAccount ? '' : connectionMethodLabel(connectionMethod(a)); $('activeState').textContent = a === emptyAccount ? 'Waiting' : platformKey(a) === 'x' ? (a.connected ? 'Online' : 'Needs authorization') : 'Integration planned'; $('activeState').parentElement.className = 'active-sub' + (a.connected ? '' : ' needs-auth');
+      $('followersValue').textContent = formatMetric(a.followers); $('followersNote').textContent = a.followers ? 'Current audience' : 'No data yet';
+      $('engagementValue').textContent = a.engagementRate ? Number(a.engagementRate).toFixed(1) + '%' : '—'; $('engagementNote').textContent = a.engagementRate ? 'Current rate' : 'No data yet';
+      $('postsValue').textContent = a.posts; $('postsNote').textContent = a === emptyAccount ? 'Add an account' : 'Target ' + a.postsTarget + ' / day';
+      $('repliesValue').textContent = a.replies; $('repliesNote').textContent = a === emptyAccount ? 'Add an account' : 'Target ' + a.repliesTarget + ' / day';
+      $('scheduledValue').textContent = a.scheduled; $('scheduledNote').textContent = a.scheduled ? 'Across active loops' : 'Nothing queued';
+      $('costValue').textContent = '$' + Number(a.cost || 0).toFixed(2); $('tokenValue').textContent = Number(a.tokens || 0).toLocaleString() + ' / ' + Number(a.tokenLimit || 1000000).toLocaleString();
+      const percent = a.tokenLimit ? Math.min(100, Math.round((a.tokens || 0) / a.tokenLimit * 100)) : 0; $('tokenPercent').textContent = percent + '%'; $('tokenMeter').style.width = percent + '%';
+      $('boostToggle').className = 'toggle ' + (a.boost ? 'on' : ''); $('boostToggle').disabled = !a.connected || !a.runnerReady; $('boostToggle').setAttribute('aria-pressed', String(a.boost)); $('boostLabel').textContent = a.boost ? 'ACTIVE' : 'OFF';
+    }
+
+    function renderFormulas() {
+      const assigned = assignedCycleIds();
+      $('formulaCount').textContent = assigned.length + ' active';
+      $('formulaList').innerHTML = state.cycles.map(function(c, i) {
+        const enabled = assigned.indexOf(cycleId(c)) !== -1;
+        return '<div class="formula-row"><span class="formula-index" style="background:' + c.color + '">' + String(i + 1).padStart(2,'0') + '</span><span class="formula-main"><span class="formula-name">' + esc(c.name) + '</span><span class="formula-description"><span class="action-chip">' + esc(actionLabel(cycleAction(c))) + '</span>' + esc(c.description) + '</span></span><span class="formula-time">' + esc(displayTime(c.time)) + '</span><button class="mini-toggle ' + (enabled ? 'on' : '') + '" data-cycle="' + i + '" type="button" aria-label="' + esc((enabled ? 'Disable' : 'Enable') + ' ' + c.name) + '" aria-pressed="' + enabled + '"><span></span></button></div>';
+      }).join('');
+      document.querySelectorAll('[data-cycle]').forEach(function(button) { button.onclick = function() { const i = Number(button.dataset.cycle); const id = cycleId(state.cycles[i]); const position = account().cycleIds.indexOf(id); if (position === -1) account().cycleIds.push(id); else account().cycleIds.splice(position, 1); render(); }; });
+    }
+
+    function renderCalendar() {
+      const days = calendarDays();
+      const currentDay = todayKey();
+      const assigned = assignedCycleIds();
+      const recap = state.cycles.find(function(c) { return cycleId(c) === 'weekly-recap'; }) || state.cycles[state.cycles.length - 1];
+      $('legend').innerHTML = state.cycles.slice(0, 4).map(function(c) { return '<span class="legend-item"><i style="background:' + c.color + '"></i>' + c.name + '</span>'; }).join('') +
+        (recap ? '<span class="legend-item"><i style="background:' + recap.color + '"></i>' + esc(recap.name) + '</span>' : '');
+      $('calendar').innerHTML = '<div class="day-head time-head"></div>' + days.map(function(d) {
+        return '<div class="day-head ' + (d.key === currentDay ? 'today' : '') + '">' + d.name + '<small>' + d.date + '</small></div>';
+      }).join('') + state.cycles.map(function(c) {
+        return '<div class="time-label">' + displayTime(c.time).replace(' AM','a').replace(' PM','p') + '</div>' + days.map(function(day) {
+          const enabled = assigned.indexOf(cycleId(c)) !== -1 && (c.days || ['mon','tue','wed','thu','fri','sat','sun']).indexOf(day.key) !== -1;
+          return '<div class="slot"><div class="slot-block ' + (enabled ? '' : 'dim') + '" style="background:' + c.color + '" title="' + esc(actionLabel(cycleAction(c)) + ' · ' + c.name) + '">' + c.short + '</div></div>';
+        }).join('');
+      }).join('');
+      const next = state.cycles.find(function(c) { return c.enabled && assigned.indexOf(cycleId(c)) !== -1 && (c.days || []).indexOf(currentDay) !== -1; }) || state.cycles.find(function(c) { return c.enabled && assigned.indexOf(cycleId(c)) !== -1; }) || state.cycles[0]; $('nextTitle').textContent = next.name; $('nextTime').textContent = 'Today · ' + displayTime(next.time);
+    }
+
+    function renderScheduleScreen() {
+      $('scheduleAccountTitle').textContent = account().handle + ' · ' + state.settings.timezone;
+      $('scheduleLegend').innerHTML = $('legend').innerHTML;
+      $('scheduleCalendar').innerHTML = $('calendar').innerHTML;
+      const assigned = assignedCycleIds();
+      $('queueList').innerHTML = state.cycles.filter(function(c) { return assigned.indexOf(cycleId(c)) !== -1 && c.enabled && (c.days || []).indexOf(todayKey()) !== -1; }).slice(0, 6).map(function(c) {
+        return '<div class="schedule-item"><span class="schedule-time">Today<br>' + esc(displayTime(c.time)) + '</span><i style="background:' + c.color + '"></i><span><span class="schedule-title">' + esc(c.name) + '</span><span class="schedule-meta">' + esc(actionLabel(cycleAction(c)) + ' · ' + c.description) + '</span></span><span class="state-pill">Queued</span></div>';
+      }).join('');
+    }
+
+    function renderCycleEditor() {
+      $('cycleEditor').innerHTML = state.cycles.map(function(c, i) {
+        const enabled = (account().cycleIds || []).indexOf(cycleId(c)) !== -1;
+        return '<div class="cycle-editor-row"><span class="formula-index" style="background:' + c.color + '">' + String(i + 1).padStart(2, '0') + '</span><input data-cycle-name="' + i + '" value="' + esc(c.name) + '" aria-label="Formula name ' + (i + 1) + '"><select data-cycle-action="' + i + '" aria-label="Action for formula ' + (i + 1) + '">' + actionOptionsMarkup(cycleAction(c)) + '</select><input data-cycle-description="' + i + '" value="' + esc(c.description) + '" aria-label="Formula instruction ' + (i + 1) + '"><input data-cycle-time="' + i + '" value="' + esc(c.time) + '" aria-label="Formula time ' + (i + 1) + '"><button class="mini-toggle ' + (enabled ? 'on' : '') + '" data-cycle-editor-toggle="' + i + '" type="button" aria-label="' + esc('Toggle ' + c.name) + '" aria-pressed="' + enabled + '"><span></span></button></div>';
+      }).join('');
+      document.querySelectorAll('[data-cycle-name]').forEach(function(input) { input.onchange = function() { state.cycles[Number(input.dataset.cycleName)].name = input.value.trim() || state.cycles[Number(input.dataset.cycleName)].name; render(); }; });
+      document.querySelectorAll('[data-cycle-description]').forEach(function(input) { input.onchange = function() { state.cycles[Number(input.dataset.cycleDescription)].description = input.value.trim() || state.cycles[Number(input.dataset.cycleDescription)].description; render(); }; });
+      document.querySelectorAll('[data-cycle-action]').forEach(function(select) { select.onchange = function() { state.cycles[Number(select.dataset.cycleAction)].action = cycleAction({action:select.value}); render(); }; });
+      document.querySelectorAll('[data-cycle-time]').forEach(function(input) { input.onchange = function() { state.cycles[Number(input.dataset.cycleTime)].time = input.value.trim() || state.cycles[Number(input.dataset.cycleTime)].time; render(); }; });
+      document.querySelectorAll('[data-cycle-editor-toggle]').forEach(function(button) { button.onclick = function() { const i = Number(button.dataset.cycleEditorToggle); const id = cycleId(state.cycles[i]); const position = account().cycleIds.indexOf(id); if (position === -1) account().cycleIds.push(id); else account().cycleIds.splice(position, 1); render(); }; });
+    }
+
+    function renderAccountsScreen() {
+      $('accountList').innerHTML = state.accounts.length ? state.accounts.map(function(a, i) {
+        const method = connectionMethod(a); const connected = a.connected ? 'Connected' : (method === 'browser' ? 'Browser selected' : 'Needs authorization');
+        const platform = platformKey(a); const label = platformLabel(platform);
+        const action = platform !== 'x' ? '<span class="state-pill">PLANNED</span>' : method === 'browser' ? '<span class="state-pill">SESSION CHECK</span>' : '<button class="ghost-button" data-connect-account="' + i + '" type="button">' + (a.connected ? 'Refresh' : 'Connect ' + label) + '</button>';
+        return '<div class="account-row">' + iconMarkup(a) + '<div><h3>' + esc(a.handle) + '</h3><p>' + label + ' · ' + esc(connectionMethodLabel(method)) + '</p><select class="connection-method-select" data-connection-method="' + i + '" aria-label="Connection method for ' + esc(a.handle) + '">' + connectionMethodOptionsMarkup(method) + '</select></div><span class="connection-state ' + (a.connected ? 'connected' : '') + '">' + (platform === 'x' ? connected : 'Not connected') + '</span>' + action + '</div>';
+      }).join('') : '<p class="screen-footnote">No X accounts yet. Use <strong>Add account</strong> above to start.</p>';
+      document.querySelectorAll('[data-connect-account]').forEach(function(button) { button.onclick = function() { checkAccount(Number(button.dataset.connectAccount)); }; });
+      document.querySelectorAll('[data-connection-method]').forEach(function(select) { select.onchange = function() { const a = state.accounts[Number(select.dataset.connectionMethod)]; a.connectionMethod = connectionMethod({connectionMethod:select.value}); a.connected = false; a.online = false; a.providerVerified = false; a.runnerReady = false; a.boost = false; save(); render(); }; });
+    }
+
+    function renderActivityScreen() {
+      const rows = state.accounts.length ? state.accounts.map(function(a) { return ['Ready', a.handle, 'Local planner', a.connected ? 'Connected' : 'Needs auth']; }) : [['Ready', 'No account', 'Add an X account to begin', 'Waiting']];
+      $('activityRows').innerHTML = rows.map(function(r) { return '<tr><td>' + esc(r[0]) + '</td><td>' + esc(r[1]) + '</td><td>' + esc(r[2]) + '</td><td><span class="state-pill">' + esc(r[3]) + '</span></td></tr>'; }).join('');
+      const totalTokens = state.accounts.reduce(function(sum, a) { return sum + a.tokens; }, 0); const totalCost = state.accounts.reduce(function(sum, a) { return sum + a.cost; }, 0);
+      $('activityTokens').textContent = totalTokens.toLocaleString(); $('activityCost').textContent = '$' + totalCost.toFixed(2); $('activityMode').textContent = account().boost ? 'ACTIVE' : 'OFF';
+    }
+
+    function applyTheme(theme) {
+      const selected = ['light','midnight','black'].indexOf(theme) === -1 ? 'midnight' : theme;
+      state.settings.theme = selected;
+      document.documentElement.dataset.theme = selected;
+      document.querySelectorAll('[data-theme-choice]').forEach(function(button) {
+        const active = button.dataset.themeChoice === selected;
+        button.classList.toggle('active', active);
+        button.setAttribute('aria-pressed', String(active));
+      });
+    }
+
+    function renderSettingsScreen() {
+      applyTheme(state.settings.theme);
+      const a = account(); const hasAccount = a !== emptyAccount;
+      $('projectNameSetting').value = hasAccount ? (a.projectName || '') : '';
+      $('projectNameSetting').disabled = !hasAccount;
+      $('connectionMethodSetting').innerHTML = connectionMethodOptionsMarkup(hasAccount ? connectionMethod(a) : 'official-api');
+      $('connectionMethodSetting').disabled = !hasAccount;
+      $('boostTactics').textContent = hasAccount ? (platformLabel(platformKey(a)) + ' tactics: ' + platformTactics[platformKey(a)] + ' This stays behind the single Boost mode switch.') : 'Boost mode is the single opt-in switch for Boost network participation and platform-aware tactics.';
+      $('timezoneSetting').value = state.settings.timezone;
+      $('scheduleEnabledToggle').className = 'toggle ' + (hasAccount && a.scheduleEnabled ? 'on' : ''); $('scheduleEnabledToggle').disabled = !hasAccount; $('scheduleEnabledToggle').setAttribute('aria-pressed', String(hasAccount && a.scheduleEnabled));
+      $('postsTargetSetting').value = hasAccount ? a.postsTarget : 10; $('postsTargetSetting').disabled = !hasAccount;
+      $('repliesTargetSetting').value = hasAccount ? a.repliesTarget : 100; $('repliesTargetSetting').disabled = !hasAccount;
+      $('tokenLimitSetting').value = hasAccount ? a.tokenLimit : 1000000; $('tokenLimitSetting').disabled = !hasAccount;
+      $('spendAlertSetting').value = hasAccount ? a.spendAlert : 80; $('spendAlertSetting').disabled = !hasAccount;
+      $('usageAlertsToggle').className = 'toggle ' + (hasAccount && a.usageAlerts ? 'on' : ''); $('usageAlertsToggle').disabled = !hasAccount; $('usageAlertsToggle').setAttribute('aria-pressed', String(hasAccount && a.usageAlerts));
+      $('codexTaskToggle').className = 'toggle ' + (hasAccount && a.codexTaskSync ? 'on' : ''); $('codexTaskToggle').disabled = !hasAccount; $('codexTaskToggle').setAttribute('aria-pressed', String(hasAccount && a.codexTaskSync));
+      $('notificationsToggle').className = 'toggle ' + (state.settings.notifications ? 'on' : ''); $('notificationsToggle').setAttribute('aria-pressed', String(state.settings.notifications));
+      $('authPauseToggle').className = 'toggle ' + (state.settings.pauseOnAuth ? 'on' : ''); $('authPauseToggle').setAttribute('aria-pressed', String(state.settings.pauseOnAuth));
+    }
+
+    function renderScreen() {
+      document.querySelectorAll('[data-screen]').forEach(function(button) { button.classList.toggle('active', button.dataset.screen === activeScreen); });
+      document.querySelectorAll('[data-screen-panel]').forEach(function(panel) { panel.classList.toggle('active', panel.dataset.screenPanel === activeScreen); });
+      document.querySelectorAll('.dashboard-part').forEach(function(part) { part.style.display = activeScreen === 'dashboard' ? '' : 'none'; });
+      if (activeScreen === 'schedule') renderScheduleScreen();
+      if (activeScreen === 'cycles') renderCycleEditor();
+      if (activeScreen === 'accounts') renderAccountsScreen();
+      if (activeScreen === 'activity') renderActivityScreen();
+      if (activeScreen === 'settings') renderSettingsScreen();
+    }
+
+    function slug(value) { return value.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, ''); }
+    function cycleId(cycle) { return cycle.id || slug(cycle.name); }
+    function todayKey() { const day = new Intl.DateTimeFormat('en-US', { weekday: 'short', timeZone: state.settings.timezone }).format(new Date()).toLowerCase(); return day.slice(0, 3); }
+    function displayTime(value) {
+      if (!value || /AM|PM/i.test(value)) return value || '';
+      const match = String(value).match(/^(\d{1,2}):(\d{2})$/);
+      if (!match) return value;
+      const hour = Number(match[1]);
+      return ((hour + 11) % 12 + 1) + ':' + match[2] + ' ' + (hour >= 12 ? 'PM' : 'AM');
+    }
+    function formatMetric(value) { const number = Number(value || 0); return number >= 1000000 ? (number / 1000000).toFixed(1).replace('.0','') + 'M' : number >= 1000 ? (number / 1000).toFixed(number >= 10000 ? 0 : 1).replace('.0','') + 'K' : number.toLocaleString(); }
+    function calendarDays() {
+      const start = new Date();
+      start.setHours(12, 0, 0, 0);
+      start.setDate(start.getDate() - ((start.getDay() + 6) % 7) + scheduleWeekOffset * 7);
+      const weekday = new Intl.DateTimeFormat('en-US', {weekday:'short', timeZone:state.settings.timezone});
+      const date = new Intl.DateTimeFormat('en-US', {month:'short', day:'numeric', timeZone:state.settings.timezone});
+      return Array.from({length:7}, function(_, i) { const value = new Date(start); value.setDate(start.getDate() + i); return {key:['mon','tue','wed','thu','fri','sat','sun'][i], name:weekday.format(value), date:date.format(value)}; });
+    }
+
+    async function persistSchedule() {
+      const payload = {
+        timezone: state.settings.timezone,
+        approval: 'draft',
+        accounts: state.accounts.map(function(a, i) {
+          return {id:a.id || 'account-' + i, provider:platformKey(a), connectionMethod:connectionMethod(a), handle:a.handle.replace(/^@/, ''), projectName:a.projectName, postsTarget:a.postsTarget, repliesTarget:a.repliesTarget, tokenLimit:a.tokenLimit, spendAlert:a.spendAlert, scheduleEnabled:a.scheduleEnabled, usageAlerts:a.usageAlerts, codexTaskSync:a.codexTaskSync, cycles:a.cycleIds || state.cycles.map(cycleId)};
+        }),
+        cycles: state.cycles.map(function(c) { return {id:cycleId(c), name:c.name, description:c.description, action:cycleAction(c), time:c.time, days:c.days, enabled:c.enabled}; })
+      };
+      try { const response = await fetch('/api/schedule', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload)}); if (!response.ok) throw new Error('schedule save failed'); alert('Schedule saved locally. Approval mode remains draft.'); }
+      catch (error) { alert('The local schedule server is unavailable. Your changes remain in this browser.'); }
+    }
+
+    async function loadSchedule() {
+      try {
+        const response = await fetch('/api/schedule');
+        if (!response.ok) return;
+        const remote = await response.json();
+        if (!remote || !Array.isArray(remote.cycles) || !remote.cycles.length) return;
+        if (typeof remote.timezone === 'string' && remote.timezone) state.settings.timezone = remote.timezone;
+        remote.cycles.forEach(function(saved) {
+          const local = state.cycles.find(function(c) { return cycleId(c) === saved.id || (saved.id === 'behind-scenes' && cycleId(c) === 'behind-the-scenes'); });
+          if (!local) return;
+          if (typeof saved.name === 'string' && saved.name) local.name = saved.name;
+          if (saved.id === 'connect') local.short = 'Builder';
+          if (saved.id === 'tools-resources') local.short = 'Keywords';
+          if (typeof saved.description === 'string') local.description = saved.description;
+          if (typeof saved.action === 'string') local.action = cycleAction(saved);
+          if (typeof saved.time === 'string' && saved.time) local.time = saved.time;
+          if (Array.isArray(saved.days)) local.days = saved.days;
+          if (typeof saved.enabled === 'boolean') local.enabled = saved.enabled;
+        });
+        if (Array.isArray(remote.accounts)) remote.accounts.forEach(function(saved) {
+          const local = state.accounts.find(function(a) { return a.id === saved.id || a.handle.toLowerCase() === ('@' + String(saved.handle || '')).toLowerCase(); });
+          if (!local) return;
+          if (Array.isArray(saved.cycles)) local.cycleIds = saved.cycles.map(function(id) { return id === 'behind-scenes' ? 'behind-the-scenes' : id; });
+          if (typeof saved.provider === 'string' && supportedPlatforms.indexOf(saved.provider) !== -1) { local.platform = saved.provider; local.provider = saved.provider; local.icon = saved.provider; }
+          if (typeof saved.connectionMethod === 'string') { const savedMethod = connectionMethod({connectionMethod:saved.connectionMethod}); if (savedMethod !== connectionMethod(local)) { local.connected = false; local.online = false; local.providerVerified = false; local.boost = false; } local.connectionMethod = savedMethod; }
+          if (typeof saved.projectName === 'string') local.projectName = saved.projectName;
+          ['postsTarget','repliesTarget','tokenLimit','spendAlert'].forEach(function(key) { if (Number.isFinite(Number(saved[key]))) local[key] = Number(saved[key]); });
+          ['scheduleEnabled','usageAlerts','codexTaskSync'].forEach(function(key) { if (typeof saved[key] === 'boolean') local[key] = saved[key]; });
+        });
+        render();
+      } catch (error) {
+        // Local browser state remains usable when the optional server is offline.
+      }
+    }
+
+    async function checkAccount(index) {
+      const a = state.accounts[index];
+      if (connectionMethod(a) === 'browser') { a.connected = false; a.online = false; a.providerVerified = false; a.runnerReady = false; a.boost = false; save(); render(); alert('Browser automation selected. Verify the signed-in browser session before running.'); return; }
+      try { const response = await fetch('/api/x/status?handle=' + encodeURIComponent(a.handle)); const info = await response.json(); a.connected = Boolean(info.connected); a.online = a.connected; a.providerVerified = a.connected; a.runnerReady = a.connected; if (!a.connected) a.boost = false; render(); if (!a.connected) alert(info.reason || 'Run xurl auth oauth2 for this account, then refresh.'); }
+      catch (error) { alert('The local xurl adapter is unavailable.'); }
+    }
+
+    function addLoop() {
+      const number = state.cycles.length + 1;
+      const loop = {id:'loop-' + number, name:'New loop', short:'New loop', description:'Set the instruction for this repeat.', action:'post', time:'7:00 PM', color:'#9b66ff', days:['mon','tue','wed','thu','fri','sat','sun'], enabled:true};
+      state.cycles.push(loop);
+      if (account() !== emptyAccount) account().cycleIds.push(loop.id);
+      save(); activeScreen = 'cycles'; renderScreen();
+    }
+
+    $('screenNav').querySelectorAll('[data-screen]').forEach(function(button) { button.onclick = function() { activeScreen = button.dataset.screen; renderScreen(); }; });
+    $('boostToggle').onclick = function() { if (!account().connected || !account().runnerReady) return; account().boost = !account().boost; render(); };
+    $('editCycles').onclick = function() { activeScreen = 'cycles'; renderScreen(); };
+    $('manageLoops').onclick = function() { activeScreen = 'schedule'; renderScreen(); };
+    $('schedulePrev').onclick = function() { scheduleWeekOffset -= 1; render(); };
+    $('scheduleNext').onclick = function() { scheduleWeekOffset += 1; render(); };
+    $('saveSchedule').onclick = persistSchedule;
+    $('addScheduledPost').onclick = addLoop;
+    $('addCycle').onclick = addLoop;
+    $('resetCycles').onclick = function() { state.cycles = cycles.map(function(c) { return Object.assign({}, c); }); account().cycleIds = state.cycles.map(cycleId); render(); };
+    $('saveCycles').onclick = persistSchedule;
+    $('refreshAccounts').onclick = function() { state.accounts.forEach(function(a, i) { if (platformKey(a) === 'x' && connectionMethod(a) === 'official-api') checkAccount(i); }); };
+    $('addAccountScreen').onclick = function() { $('addAccount').click(); };
+    $('exportReceipts').onclick = function() { const text = JSON.stringify({exportedAt:new Date().toISOString(), accounts:state.accounts.map(function(a) { return a.handle; })}, null, 2); const blob = new Blob([text], {type:'application/json'}); const url = URL.createObjectURL(blob); const link = document.createElement('a'); link.href = url; link.download = 'boost-receipts.json'; link.click(); URL.revokeObjectURL(url); };
+    $('pauseBoost').onclick = function() { state.accounts.forEach(function(a) { a.boost = false; }); render(); };
+    document.querySelectorAll('[data-theme-choice]').forEach(function(button) { button.onclick = function() { applyTheme(button.dataset.themeChoice); save(); }; });
+    $('timezoneSetting').onchange = function() { state.settings.timezone = $('timezoneSetting').value; save(); };
+    $('projectNameSetting').onchange = function() { if (account() === emptyAccount) return; account().projectName = $('projectNameSetting').value.trim() || 'Untitled project'; save(); render(); };
+    $('connectionMethodSetting').onchange = function() { if (account() === emptyAccount) return; account().connectionMethod = connectionMethod({connectionMethod:$('connectionMethodSetting').value}); account().connected = false; account().online = false; account().providerVerified = false; account().runnerReady = false; account().boost = false; save(); render(); };
+    $('postsTargetSetting').onchange = function() { if (account() === emptyAccount) return; account().postsTarget = Math.max(0, Math.min(100, Number($('postsTargetSetting').value) || 0)); save(); render(); };
+    $('repliesTargetSetting').onchange = function() { if (account() === emptyAccount) return; account().repliesTarget = Math.max(0, Math.min(500, Number($('repliesTargetSetting').value) || 0)); save(); render(); };
+    $('tokenLimitSetting').onchange = function() { if (account() === emptyAccount) return; account().tokenLimit = Math.max(0, Math.min(100000000, Number($('tokenLimitSetting').value) || 0)); save(); render(); };
+    $('spendAlertSetting').onchange = function() { if (account() === emptyAccount) return; account().spendAlert = Number($('spendAlertSetting').value); save(); };
+    $('scheduleEnabledToggle').onclick = function() { if (account() === emptyAccount) return; account().scheduleEnabled = !account().scheduleEnabled; save(); render(); };
+    $('usageAlertsToggle').onclick = function() { if (account() === emptyAccount) return; account().usageAlerts = !account().usageAlerts; save(); renderSettingsScreen(); };
+    $('codexTaskToggle').onclick = function() { if (account() === emptyAccount) return; account().codexTaskSync = !account().codexTaskSync; save(); renderSettingsScreen(); };
+    $('notificationsToggle').onclick = function() { state.settings.notifications = !state.settings.notifications; renderSettingsScreen(); save(); };
+    $('authPauseToggle').onclick = function() { state.settings.pauseOnAuth = !state.settings.pauseOnAuth; renderSettingsScreen(); save(); };
+    $('saveSettings').onclick = function() { state.settings.timezone = $('timezoneSetting').value; save(); alert('Settings saved locally.'); };
+
+    function render() { renderTabs(); renderMetrics(account()); renderFormulas(); renderCalendar(); applyTheme(state.settings.theme); renderScreen(); save(); }
+    render();
+    loadSchedule();
+  </script>
+</body>
+</html>
+
+

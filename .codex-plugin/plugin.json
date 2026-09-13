@@ -1,0 +1,18 @@
+{
+  "name": "boost",
+  "version": "0.1.0+codex.20260912163540",
+  "description": "A minimal local social dashboard for metrics, repeatable actions, schedules, usage, and Boost mode.",
+  "author": {
+    "name": "Local developer"
+  },
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Boost",
+    "shortDescription": "Control your social presence.",
+    "longDescription": "Boost gives you a compact local dashboard for platform account tabs, core metrics, repeatable post, reply, and DM actions, schedules, usage, connection method choice, approvals, platform tactics, and Codex task sync.",
+    "developerName": "Local developer",
+    "category": "Productivity",
+    "capabilities": [],
+    "defaultPrompt": "Open Boost and help me plan the next social pass."
+  }
+}

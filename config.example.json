@@ -1,0 +1,11 @@
+{
+  "adapter": "xurl",
+  "xurl_app": null,
+  "schedule_store": "data/schedule.json",
+  "accounts": [],
+  "targets": {"original_posts": 10, "targeted_replies": 100, "relevant_follows": 30},
+  "strategies": [],
+  "receipts": "outputs/social-receipts"
+}
+
+

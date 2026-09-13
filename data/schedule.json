@@ -1,0 +1,17 @@
+{
+  "timezone": "UTC",
+  "approval": "draft",
+  "accounts": [],
+  "cycles": [
+    {"id": "road-to-1m", "name": "Road to 1M", "action": "post", "time": "09:00", "days": ["mon", "tue", "wed", "thu", "fri", "sat", "sun"]},
+    {"id": "connect", "name": "Builder check-in", "description": "Ask builders what they are building or need.", "action": "post", "time": "10:00", "days": ["mon", "tue", "wed", "thu", "fri", "sat", "sun"]},
+    {"id": "showcase", "name": "Showcase", "action": "post", "time": "11:00", "days": ["mon", "tue", "wed", "thu", "fri", "sat", "sun"]},
+    {"id": "value-drop", "name": "Value drop", "action": "post", "time": "12:00", "days": ["mon", "tue", "wed", "thu", "fri"]},
+    {"id": "behind-the-scenes", "name": "Behind the scenes", "action": "post", "time": "13:00", "days": ["mon", "wed", "fri"]},
+    {"id": "hot-take", "name": "Hot take", "action": "post", "time": "14:00", "days": ["tue", "thu", "sat"]},
+    {"id": "community-love", "name": "Community love", "action": "reply-others", "time": "15:00", "days": ["mon", "tue", "wed", "thu", "fri"]},
+    {"id": "tools-resources", "name": "Keyword signal", "description": "Share a useful keyword, tool, or GitHub project.", "action": "post", "time": "16:00", "days": ["mon", "tue", "wed", "thu", "fri", "sat", "sun"]},
+    {"id": "weekly-recap", "name": "Weekly recap", "action": "post", "time": "17:00", "days": ["sun"]},
+    {"id": "open-loop", "name": "Open loop", "action": "post", "time": "18:00", "days": ["mon", "wed", "fri"]}
+  ]
+}
