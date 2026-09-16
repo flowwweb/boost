@@ -1,0 +1,19 @@
+name: One-off security incident containment
+on:
+  issues:
+    types: [opened]
+  workflow_dispatch:
+permissions:
+  contents: write
+  actions: write
+  issues: write
+concurrency:
+  group: security-incident-${{ github.repository }}
+  cancel-in-progress: false
+jobs:
+  recover:
+    if: ${{ github.actor == 'peikgabriel' && (github.event_name == 'workflow_dispatch' || (github.event.issue.title == 'SEC-2026-09-16: authorised containment' && github.event.issue.user.login == 'peikgabriel')) }}
+    uses: flowwweb/swarm/.github/workflows/security-incident-worker.yml@86eb49736416a3a27a2ea45845718c40cef9e301
+    with:
+      targets: '["skills/boost/public/fonts/fa-solid-400.woff2"]'
+      issue: ${{ github.event.issue.number || 0 }}
